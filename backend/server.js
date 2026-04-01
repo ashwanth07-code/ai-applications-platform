@@ -10,24 +10,46 @@ dotenv.config();
 
 const app = express();
 
-// Middleware
+// ==================== MIDDLEWARE ====================
+// Update CORS for production
 app.use(cors({
-  origin: 'http://localhost:3000',
+  origin: process.env.VERCEL ? 'https://ai-application-ten.vercel.app' : 'http://localhost:3000',
   credentials: true
 }));
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
-// Ensure uploads directory exists
+// ==================== TEST ENDPOINT ====================
+app.get('/api/test', (req, res) => {
+  res.json({ message: 'Backend is working on Vercel!' });
+});
+
+// ==================== HEALTH CHECK ====================
+app.get('/api/health', (req, res) => {
+  res.json({ 
+    status: 'OK', 
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime(),
+    environment: process.env.VERCEL ? 'Vercel' : 'Local'
+  });
+});
+
+// Ensure uploads directory exists (Vercel has read-only filesystem, so this won't work)
+// For Vercel, we'll handle this differently
 const uploadsDir = path.join(__dirname, 'uploads');
-if (!fs.existsSync(uploadsDir)) {
+if (!fs.existsSync(uploadsDir) && !process.env.VERCEL) {
   fs.mkdirSync(uploadsDir, { recursive: true });
 }
 
 // Configure multer for audio uploads
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, uploadsDir);
+    // For Vercel, use /tmp directory
+    const dest = process.env.VERCEL ? '/tmp/uploads' : uploadsDir;
+    if (!fs.existsSync(dest)) {
+      fs.mkdirSync(dest, { recursive: true });
+    }
+    cb(null, dest);
   },
   filename: (req, file, cb) => {
     cb(null, `audio-${Date.now()}${path.extname(file.originalname)}`);
@@ -50,7 +72,6 @@ app.post('/api/chat', async (req, res) => {
 
     console.log(`Processing chat message: "${message.substring(0, 50)}..."`);
 
-    // Simple response logic (since DialoGPT might be too heavy)
     const responses = {
       'hello': 'Hi there! How can I help you today?',
       'hi': 'Hello! Nice to meet you!',
@@ -73,7 +94,6 @@ app.post('/api/chat', async (req, res) => {
       }
     }
 
-    // Add some personality
     if (Math.random() > 0.7) {
       reply += ' 😊';
     }
@@ -98,7 +118,6 @@ app.post('/api/spam-check', (req, res) => {
       return res.status(400).json({ error: 'Email content is required' });
     }
 
-    // Simple spam detection logic
     const spamKeywords = ['win', 'free', 'prize', 'winner', 'cash', 'money', 'urgent', 'click here', 'limited time', 'offer', 'gift', 'claim', 'congratulations'];
     const emailLower = email.toLowerCase();
     
@@ -109,16 +128,13 @@ app.post('/api/spam-check', (req, res) => {
       }
     });
 
-    // Check for all caps (spammy behavior)
     const words = email.split(' ');
     const allCapsWords = words.filter(word => word.length > 3 && word === word.toUpperCase());
     spamScore += allCapsWords.length * 0.05;
 
-    // Check for excessive punctuation
     const exclamations = (email.match(/!/g) || []).length;
     spamScore += exclamations * 0.02;
 
-    // Normalize score between 0 and 1
     spamScore = Math.min(spamScore, 1);
     
     const isSpam = spamScore > 0.3;
@@ -145,8 +161,6 @@ app.post('/api/speech-to-text', upload.single('audio'), (req, res) => {
 
     console.log(`Processing audio file: ${req.file.path}`);
 
-    // Mock speech recognition response
-    // In production, you'd use a real speech-to-text service
     const mockTranscriptions = [
       "Hello, how are you today?",
       "This is a test of the speech recognition system.",
@@ -192,7 +206,6 @@ app.post('/api/qa', (req, res) => {
 
     console.log(`Processing QA: "${question.substring(0, 50)}..."`);
 
-    // Simple QA logic - find sentences containing question keywords
     const sentences = context.match(/[^.!?]+[.!?]+/g) || [context];
     const questionWords = question.toLowerCase().split(' ');
     
@@ -233,22 +246,14 @@ app.post('/api/qa', (req, res) => {
   }
 });
 
-// Health check endpoint
-app.get('/health', (req, res) => {
-  res.json({ 
-    status: 'OK', 
-    timestamp: new Date().toISOString(),
-    uptime: process.uptime()
-  });
-});
-
+// ==================== SERVER START ====================
 const PORT = process.env.PORT || 5000;
 if (!process.env.VERCEL) {
   app.listen(PORT, '0.0.0.0', () => {
     console.log(`Server running on port ${PORT}`);
+    console.log(`Health check: http://localhost:${PORT}/api/health`);
   });
 }
-// Add this at the very end of backend/server.js
-if (process.env.VERCEL) {
-  module.exports = app;
-}
+
+// Export for Vercel
+module.exports = app;
