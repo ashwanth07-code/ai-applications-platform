@@ -4,15 +4,156 @@
     <meta charset="utf-8" />
     <link rel="icon" href="%PUBLIC_URL%/favicon.ico" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="theme-color" content="#2196f3" />
-    <meta name="description" content="AI Applications Platform - ChatBot, Spam Filter, Speech Recognition, Q&A System" />
+    <meta name="theme-color" content="#0A0A0F" />
+    <meta name="description" content="AI Applications Platform - AI ChatBot, Spam Filter, Speech Recognition, and Q&A System. Transform your workflow with cutting-edge artificial intelligence tools." />
+    <meta name="keywords" content="AI, ChatBot, Spam Filter, Speech Recognition, Q&A System, Artificial Intelligence, Machine Learning" />
+    <meta name="author" content="AI Applications Platform" />
+    <meta name="robots" content="index, follow" />
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://yourdomain.com/" />
+    <meta property="og:title" content="AI Applications Platform" />
+    <meta property="og:description" content="Four powerful AI tools to enhance your workflow: ChatBot, Spam Filter, Speech Recognition, and Q&A System." />
+    <meta property="og:image" content="%PUBLIC_URL%/og-image.png" />
+    
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image" />
+    <meta property="twitter:url" content="https://yourdomain.com/" />
+    <meta property="twitter:title" content="AI Applications Platform" />
+    <meta property="twitter:description" content="Four powerful AI tools to enhance your workflow." />
+    <meta property="twitter:image" content="%PUBLIC_URL%/twitter-image.png" />
+    
     <link rel="apple-touch-icon" href="%PUBLIC_URL%/logo192.png" />
     <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,400,500,700&display=swap" />
-    <title>AI Applications Platform</title>
+    
+    <!-- Preconnect to Google Fonts for faster loading -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet" />
+    
+    <title>AI Applications Platform | AI ChatBot, Spam Filter, Speech Recognition & Q&A System</title>
+    
+    <style>
+        /* Prevent white flash while React loads */
+        body {
+            margin: 0;
+            font-family: 'Inter', 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Oxygen',
+                'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+                sans-serif;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            background: radial-gradient(circle at 50% 50%, #0A0A0F 0%, #050508 100%);
+            min-height: 100vh;
+        }
+        
+        /* Loading animation while React initializes */
+        .loading-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: radial-gradient(circle at 50% 50%, #0A0A0F 0%, #050508 100%);
+            z-index: 9999;
+            transition: opacity 0.5s ease-out;
+        }
+        
+        .loader {
+            text-align: center;
+        }
+        
+        .loader-spinner {
+            width: 48px;
+            height: 48px;
+            border: 3px solid #2A2A35;
+            border-top-color: #3B82F6;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+        
+        .loader-text {
+            color: #FFFFFF;
+            font-size: 0.9rem;
+            letter-spacing: 2px;
+            font-weight: 500;
+            opacity: 0.8;
+        }
+        
+        .loader-dots::after {
+            content: '...';
+            animation: dots 1.5s steps(4, end) infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        @keyframes dots {
+            0%, 20% { content: ''; }
+            40% { content: '.'; }
+            60% { content: '..'; }
+            80%, 100% { content: '...'; }
+        }
+        
+        code {
+            font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New', monospace;
+        }
+    </style>
 </head>
 <body>
-    <noscript>You need to enable JavaScript to run this app.</noscript>
-    <div id="root"></div>
+    <noscript>
+        <div style="
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: #0A0A0F;
+            color: #FFFFFF;
+            font-family: 'Inter', sans-serif;
+            text-align: center;
+            padding: 20px;
+        ">
+            <div>
+                <h1>⚠️ JavaScript Required</h1>
+                <p>AI Applications Platform requires JavaScript to run.<br>Please enable JavaScript in your browser settings.</p>
+            </div>
+        </div>
+    </noscript>
+    
+    <div id="root">
+        <!-- Loading indicator while React loads -->
+        <div class="loading-container" id="loading-container">
+            <div class="loader">
+                <div class="loader-spinner"></div>
+                <div class="loader-text">
+                    Loading AI Platform<span class="loader-dots"></span>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Hide loading indicator when React mounts
+        window.addEventListener('load', function() {
+            setTimeout(function() {
+                const loadingContainer = document.getElementById('loading-container');
+                if (loadingContainer) {
+                    loadingContainer.style.opacity = '0';
+                    setTimeout(function() {
+                        loadingContainer.style.display = 'none';
+                    }, 500);
+                }
+            }, 500);
+        });
+    </script>
 </body>
 </html>

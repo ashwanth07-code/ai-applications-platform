@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Speech Recognition System - Enhanced Version
+Speech Recognition System - Working Version
 """
 import sys
 import json
@@ -14,7 +14,7 @@ import contextlib
 class SpeechRecognizer:
     def __init__(self):
         self.recognizer = sr.Recognizer()
-        # Adjust for ambient noise sensitivity
+        # Adjust for better recognition
         self.recognizer.dynamic_energy_threshold = True
         self.recognizer.energy_threshold = 300
         self.recognizer.pause_threshold = 0.8
@@ -41,7 +41,7 @@ class SpeechRecognizer:
             # Create temporary WAV file
             with tempfile.NamedTemporaryFile(suffix='.wav', delete=False) as temp_file:
                 wav_path = temp_file.name
-                # Export with proper settings
+                # Export with proper settings for better recognition
                 audio.export(wav_path, format='wav', parameters=["-ac", "1", "-ar", "16000"])
                 return wav_path
                 

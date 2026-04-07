@@ -1,37 +1,76 @@
-const express = require('express');
-const router = express.Router();
-const multer = require('multer');
+const { spawn } = require('child_process');
 const path = require('path');
-const { v4: uuidv4 } = require('uuid');
-const speechController = require('../controllers/speechController');
+const fs = require('fs-extra');
+const logger = require('../utils/logger');
 
-// Configure multer for audio uploads
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, 'uploads/');
-  },
-  filename: (req, file, cb) => {
-    const uniqueId = uuidv4();
-    const ext = path.extname(file.originalname) || '.wav';
-    cb(null, `${uniqueId}${ext}`);
-  }
-});
+exports.transcribeAudio = async (req, res, next) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: 'Audio file is required' });
+    }
 
-const fileFilter = (req, file, cb) => {
-  const allowedTypes = ['audio/wav', 'audio/mpeg', 'audio/mp3', 'audio/webm', 'audio/ogg'];
-  if (allowedTypes.includes(file.mimetype)) {
-    cb(null, true);
-  } else {
-    cb(new Error('Invalid file type. Only audio files are allowed.'), false);
+    const audioPath = req.file.path;
+    logger.info(`Processing audio file: ${audioPath}`);
+
+    // Check if file exists
+    if (!fs.existsSync(audioPath)) {
+      return res.status(400).json({ error: 'Audio file not found' });
+    }
+
+    const pythonProcess = spawn('python3', [
+      path.join(__dirname, '../../ai-models/scripts/speech_recognition.py'),
+      audioPath
+    ]);
+
+    let result = '';
+    let errorOutput = '';
+
+    pythonProcess.stdout.on('data', (data) => {
+      result += data.toString();
+    });
+
+    pythonProcess.stderr.on('data', (data) => {
+      errorOutput += data.toString();
+      logger.error(`Python error: ${data}`);
+    });
+
+    pythonProcess.on('close', async (code) => {
+      // Clean up uploaded file
+      try {
+        await fs.remove(audioPath);
+      } catch (cleanupError) {
+        logger.error(`Failed to clean up audio file: ${cleanupError}`);
+      }
+
+      if (code === 0) {
+        try {
+          const parsed = JSON.parse(result);
+          logger.info(`Transcription completed: confidence=${parsed.confidence}`);
+          res.json(parsed);
+        } catch (parseError) {
+          logger.error(`Failed to parse Python output: ${parseError}`);
+          res.status(500).json({ 
+            success: false,
+            error: 'Invalid response from AI service'
+          });
+        }
+      } else {
+        logger.error(`Python process exited with code ${code}`);
+        res.status(500).json({ 
+          success: false,
+          error: 'Speech recognition failed',
+          details: errorOutput || 'Unknown error'
+        });
+      }
+    });
+
+    pythonProcess.on('error', (err) => {
+      logger.error(`Failed to start Python process: ${err}`);
+      res.status(500).json({ error: 'Failed to start AI service' });
+    });
+
+  } catch (error) {
+    logger.error(`Speech controller error: ${error.message}`);
+    next(error);
   }
 };
-
-const upload = multer({ 
-  storage: storage,
-  fileFilter: fileFilter,
-  limits: { fileSize: 10 * 1024 * 1024 } // 10MB limit
-});
-
-router.post('/', upload.single('audio'), speechController.transcribeAudio);
-
-module.exports = router;
