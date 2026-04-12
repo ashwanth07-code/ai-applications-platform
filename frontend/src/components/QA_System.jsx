@@ -9,7 +9,6 @@ import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import HistoryIcon from '@mui/icons-material/History';
 import QuestionAnswerIcon from '@mui/icons-material/QuestionAnswer';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
-import axios from 'axios';
 
 const QA_System = () => {
   const navigate = useNavigate();
@@ -21,7 +20,45 @@ const QA_System = () => {
   const [history, setHistory] = useState([]);
   const [tabValue, setTabValue] = useState(0);
 
-  const askQuestion = async () => {
+  // Local QA function (no backend needed)
+  const findAnswer = (question, context) => {
+    const questionLower = question.toLowerCase();
+    const sentences = context.match(/[^.!?]+[.!?]+/g) || [context];
+    
+    // Extract key words from question
+    const keywords = questionLower.split(' ').filter(word => word.length > 3);
+    
+    let bestSentence = '';
+    let bestScore = 0;
+    
+    sentences.forEach(sentence => {
+      const sentenceLower = sentence.toLowerCase();
+      let score = 0;
+      keywords.forEach(keyword => {
+        if (sentenceLower.includes(keyword)) {
+          score++;
+        }
+      });
+      if (score > bestScore) {
+        bestScore = score;
+        bestSentence = sentence;
+      }
+    });
+    
+    if (bestSentence) {
+      return {
+        answer: bestSentence.trim(),
+        confidence: Math.min(0.5 + (bestScore / keywords.length) * 0.5, 0.95)
+      };
+    }
+    
+    return {
+      answer: "I couldn't find a specific answer in the provided context. Please try rephrasing your question or providing more context.",
+      confidence: 0.3
+    };
+  };
+
+  const askQuestion = () => {
     if (!question.trim() || !context.trim()) {
       setError('Please enter both question and context');
       return;
@@ -30,38 +67,34 @@ const QA_System = () => {
     setLoading(true);
     setError('');
 
-    try {
-      const response = await axios.post('http://localhost:5000/api/qa', {
-        question,
-        context
+    // Simulate API delay
+    setTimeout(() => {
+      const result = findAnswer(question, context);
+      
+      setAnswer({
+        success: true,
+        answer: result.answer,
+        confidence: result.confidence
       });
-
-      if (response.data.success) {
-        setAnswer(response.data);
-        setHistory(prev => [
-          {
-            id: Date.now(),
-            question,
-            answer: response.data.answer,
-            confidence: response.data.confidence,
-            timestamp: new Date().toLocaleString()
-          },
-          ...prev
-        ]);
-      } else {
-        setError('Failed to get answer: ' + (response.data.error || 'Unknown error'));
-      }
-    } catch (err) {
-      setError('Error connecting to server. Please make sure the backend is running on port 5000.');
-      console.error('QA error:', err);
-    } finally {
+      
+      setHistory(prev => [
+        {
+          id: Date.now(),
+          question,
+          answer: result.answer,
+          confidence: result.confidence,
+          timestamp: new Date().toLocaleString()
+        },
+        ...prev
+      ]);
+      
       setLoading(false);
-    }
+    }, 500);
   };
 
   const loadSampleContext = () => {
     setContext(
-      "Artificial intelligence (AI) is intelligence demonstrated by machines, as opposed to natural intelligence displayed by animals including humans. AI research has been defined as the field of study of intelligent agents, which refers to any system that perceives its environment and takes actions that maximize its chance of achieving its goals. The term 'artificial intelligence' had previously been used to describe machines that mimic and display 'human' cognitive skills that are associated with the human mind, such as 'learning' and 'problem-solving'. This definition has since been rejected by major AI researchers who now describe AI in terms of rationality and acting rationally, which does not limit how intelligence can be articulated. AI applications include advanced web search engines, recommendation systems, understanding human speech, self-driving cars, automated decision-making, and competing at the highest level in strategic game systems."
+      "Artificial intelligence (AI) is intelligence demonstrated by machines, as opposed to natural intelligence displayed by animals including humans. AI research has been defined as the field of study of intelligent agents, which refers to any system that perceives its environment and takes actions that maximize its chance of achieving its goals. The term 'artificial intelligence' had previously been used to describe machines that mimic and display 'human' cognitive skills that are associated with the human mind, such as 'learning' and 'problem-solving'."
     );
     setQuestion("What is artificial intelligence?");
   };
@@ -88,24 +121,24 @@ const QA_System = () => {
       left: 0,
       right: 0,
       bottom: 0,
-      overflow: 'hidden'  // ← CHANGED: from 'auto' to 'hidden' to remove outside scrollbar
+      overflow: 'hidden'
     }}>
       <Paper
         elevation={24}
         sx={{
           width: '100%',
           maxWidth: '1200px',
-          height: 'calc(80vh - 48px)',  // ← ADDED: Fixed height calculation
+          height: 'calc(100vh - 48px)',
           display: 'flex',
           flexDirection: 'column',
           borderRadius: 4,
           background: 'linear-gradient(145deg, #1e1e2f, #2d2d44)',
           border: '1px solid #4a4a6a',
           boxShadow: '0 20px 40px rgba(0,0,0,0.8)',
-          overflow: 'hidden'  // ← ADDED: Hide overflow at Paper level
+          overflow: 'hidden'
         }}
       >
-        {/* Header with Back to Home button - Fixed */}
+        {/* Header */}
         <Box sx={{ 
           p: 2, 
           background: 'linear-gradient(90deg, #6a1b9a, #4a148c, #2a0e5c)',
@@ -125,7 +158,6 @@ const QA_System = () => {
                 background: 'linear-gradient(45deg, #ff6b6b, #f03e3e)',
                 color: 'white',
                 fontWeight: 'bold',
-                boxShadow: '0 4px 10px rgba(255,107,107,0.5)',
                 '&:hover': {
                   background: 'linear-gradient(45deg, #f03e3e, #c92a2a)',
                 }
@@ -151,10 +183,10 @@ const QA_System = () => {
           </Box>
         </Box>
 
-        {/* Scrollable Content Area - ONLY THIS SCROLLS */}
+        {/* Main Content */}
         <Box sx={{ 
           flexGrow: 1,
-          overflowY: 'auto',  // ← This is the ONLY scrollbar in the entire page
+          overflowY: 'auto',
           p: 3,
           background: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #1e1e2f 100%)',
           '&::-webkit-scrollbar': {
@@ -167,9 +199,6 @@ const QA_System = () => {
           '&::-webkit-scrollbar-thumb': {
             background: 'linear-gradient(45deg, #6a1b9a, #9575cd)',
             borderRadius: '4px',
-          },
-          '&::-webkit-scrollbar-thumb:hover': {
-            background: 'linear-gradient(45deg, #9575cd, #6a1b9a)',
           },
         }}>
           
@@ -199,31 +228,14 @@ const QA_System = () => {
                   onChange={(e) => setQuestion(e.target.value)}
                   placeholder="e.g., What is artificial intelligence?"
                   disabled={loading}
-                  InputLabelProps={{
-                    sx: { color: '#b0b0d0' }
-                  }}
                   sx={{
                     mb: 2,
                     '& .MuiOutlinedInput-root': {
                       backgroundColor: '#1e1e2f',
                       color: '#e0e0e0',
-                      '& fieldset': {
-                        borderColor: '#4a4a6a',
-                      },
-                      '&:hover fieldset': {
-                        borderColor: '#9575cd',
-                      },
-                      '&.Mui-focused fieldset': {
-                        borderColor: '#6a1b9a',
-                        borderWidth: '2px',
-                      },
-                    },
-                    '& .MuiInputBase-input::placeholder': {
-                      color: '#8080a0',
-                      opacity: 1,
-                    },
-                    '& .MuiInputLabel-root': {
-                      color: '#b0b0d0',
+                      '& fieldset': { borderColor: '#4a4a6a' },
+                      '&:hover fieldset': { borderColor: '#9575cd' },
+                      '&.Mui-focused fieldset': { borderColor: '#6a1b9a', borderWidth: '2px' },
                     },
                   }}
                 />
@@ -237,17 +249,10 @@ const QA_System = () => {
                       flexGrow: 1,
                       background: 'linear-gradient(45deg, #6a1b9a, #4a148c)',
                       color: 'white',
-                      boxShadow: '0 4px 10px rgba(106,27,154,0.5)',
-                      '&:hover': {
-                        background: 'linear-gradient(45deg, #4a148c, #6a1b9a)',
-                      },
-                      '&.Mui-disabled': {
-                        background: '#3d3d5a',
-                        color: '#8080a0',
-                      }
+                      '&:hover': { background: 'linear-gradient(45deg, #4a148c, #6a1b9a)' },
                     }}
                   >
-                    {loading ? <LinearProgress sx={{ width: 100, color: 'white' }} /> : 'Ask Question'}
+                    {loading ? <LinearProgress sx={{ width: 100 }} /> : 'Ask Question'}
                   </Button>
                   <Button 
                     variant="outlined" 
@@ -255,11 +260,7 @@ const QA_System = () => {
                     sx={{
                       borderColor: '#9575cd',
                       color: '#9575cd',
-                      '&:hover': {
-                        borderColor: '#6a1b9a',
-                        color: '#6a1b9a',
-                        background: 'rgba(106,27,154,0.1)',
-                      }
+                      '&:hover': { borderColor: '#6a1b9a', color: '#6a1b9a' }
                     }}
                   >
                     Sample
@@ -273,10 +274,7 @@ const QA_System = () => {
                       mb: 2,
                       background: 'linear-gradient(135deg, #c62828, #b71c1c)',
                       color: 'white',
-                      '& .MuiAlert-icon': {
-                        color: 'white'
-                      }
-                    }}
+                    }} 
                     onClose={() => setError('')}
                   >
                     {error}
@@ -295,37 +293,16 @@ const QA_System = () => {
                   onChange={(e) => setContext(e.target.value)}
                   placeholder="Paste your document text here..."
                   disabled={loading}
-                  InputLabelProps={{
-                    sx: { color: '#b0b0d0' }
-                  }}
-                  helperText="The AI will search for answers within this context"
                   sx={{
                     '& .MuiOutlinedInput-root': {
                       backgroundColor: '#1e1e2f',
                       color: '#e0e0e0',
-                      '& fieldset': {
-                        borderColor: '#4a4a6a',
-                      },
-                      '&:hover fieldset': {
-                        borderColor: '#9575cd',
-                      },
-                      '&.Mui-focused fieldset': {
-                        borderColor: '#6a1b9a',
-                        borderWidth: '2px',
-                      },
-                    },
-                    '& .MuiInputBase-input::placeholder': {
-                      color: '#8080a0',
-                      opacity: 1,
-                    },
-                    '& .MuiFormHelperText-root': {
-                      color: '#b0b0d0',
-                      background: 'rgba(106,27,154,0.1)',
-                      padding: '4px 8px',
-                      borderRadius: '4px',
-                      marginTop: '4px',
+                      '& fieldset': { borderColor: '#4a4a6a' },
+                      '&:hover fieldset': { borderColor: '#9575cd' },
+                      '&.Mui-focused fieldset': { borderColor: '#6a1b9a', borderWidth: '2px' },
                     },
                   }}
+                  helperText="The AI will search for answers within this context"
                 />
               </Grid>
 
@@ -358,20 +335,7 @@ const QA_System = () => {
                         mb: 2,
                         borderRadius: 1,
                         border: '1px solid #4a4a6a',
-                        color: '#e0e0e0',
-                        maxHeight: '200px',
-                        overflow: 'auto',  // ← ADDED: Internal scroll for long answers
-                        '&::-webkit-scrollbar': {
-                          width: '6px',
-                        },
-                        '&::-webkit-scrollbar-track': {
-                          background: '#2d2d44',
-                          borderRadius: '3px',
-                        },
-                        '&::-webkit-scrollbar-thumb': {
-                          background: 'linear-gradient(45deg, #6a1b9a, #9575cd)',
-                          borderRadius: '3px',
-                        },
+                        color: '#e0e0e0'
                       }}>
                         <Typography variant="body1">
                           {answer.answer}
@@ -402,26 +366,7 @@ const QA_System = () => {
           {tabValue === 1 && (
             <Box>
               {history.length > 0 ? (
-                <Grid 
-                  container 
-                  spacing={2}
-                  sx={{
-                    maxHeight: 'calc(100vh - 280px)',  // ← ADDED: Fixed height for history section
-                    overflow: 'auto',  // ← ADDED: Scroll only within history section
-                    pr: 1,
-                    '&::-webkit-scrollbar': {
-                      width: '6px',
-                    },
-                    '&::-webkit-scrollbar-track': {
-                      background: '#2d2d44',
-                      borderRadius: '3px',
-                    },
-                    '&::-webkit-scrollbar-thumb': {
-                      background: 'linear-gradient(45deg, #6a1b9a, #9575cd)',
-                      borderRadius: '3px',
-                    },
-                  }}
-                >
+                <Grid container spacing={2}>
                   {history.map((item) => (
                     <Grid item xs={12} key={item.id}>
                       <Card sx={{ 
@@ -451,39 +396,14 @@ const QA_System = () => {
                           <Typography variant="subtitle1" gutterBottom sx={{ color: '#ffd700' }}>
                             <strong>Q:</strong> {item.question}
                           </Typography>
-                          <Paper sx={{ 
-                            p: 2, 
-                            background: '#1e1e2f',
-                            mb: 1,
-                            borderRadius: 1,
-                            border: '1px solid #4a4a6a',
-                            color: '#e0e0e0',
-                            maxHeight: '80px',
-                            overflow: 'auto',  // ← ADDED: Scroll for long answers in history
-                            '&::-webkit-scrollbar': {
-                              width: '4px',
-                            },
-                            '&::-webkit-scrollbar-track': {
-                              background: '#2d2d44',
-                            },
-                            '&::-webkit-scrollbar-thumb': {
-                              background: 'linear-gradient(45deg, #6a1b9a, #9575cd)',
-                            },
-                          }}>
-                            <Typography variant="body2">
-                              <strong>A:</strong> {item.answer}
-                            </Typography>
-                          </Paper>
+                          <Typography variant="body1" paragraph sx={{ color: '#e0e0e0' }}>
+                            <strong>A:</strong> {item.answer}
+                          </Typography>
                           <Button 
                             size="small" 
                             startIcon={<ContentCopyIcon />}
                             onClick={() => copyToClipboard(item.answer)}
-                            sx={{ 
-                              color: '#9575cd',
-                              '&:hover': {
-                                color: '#6a1b9a',
-                              }
-                            }}
+                            sx={{ color: '#9575cd' }}
                           >
                             Copy Answer
                           </Button>
