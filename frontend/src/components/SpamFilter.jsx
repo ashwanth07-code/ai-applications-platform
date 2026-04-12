@@ -307,7 +307,7 @@ const SpamFilter = () => {
         sx={{
           width: '100%',
           maxWidth: '1200px',
-          height: 'calc(80vh - 48px)',
+          height: 'calc(85vh - 48px)',
           display: 'flex',
           flexDirection: 'column',
           borderRadius: 4,

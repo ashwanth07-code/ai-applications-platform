@@ -128,7 +128,7 @@ const QA_System = () => {
         sx={{
           width: '100%',
           maxWidth: '1200px',
-          height: 'calc(100vh - 48px)',
+          height: 'calc(85vh - 48px)',
           display: 'flex',
           flexDirection: 'column',
           borderRadius: 4,
